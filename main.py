@@ -1,6 +1,7 @@
 import logging
 import yt_dlp
 from pathlib import Path
+from correccion_automatica import editar_metadatos
 
 BASE = Path(__file__).resolve().parent
 CARPETA_DESCARGAS = BASE / "downloads"
@@ -105,11 +106,12 @@ def main():
         print("  1. Descargar una URL individual")
         print("  2. Descargar desde archivo 'links.txt'")
         print("  3. Buscar en YouTube y descargar")
-        print("  4. Salir")
+        print("  4. Corregir metadatos(titulo, artista) y nombre del archivo")
+        print("  5. Salir")
         
-        opcion = input("\nElige una opción (1, 2, 3 o 4): ").strip()
+        opcion = input("\nElige una opción (1, 2, 3, 4 o 5): ").strip()
         
-        if opcion == '4' or opcion.lower() in ['salir', 'q', 'exit']:
+        if opcion == '5' or opcion.lower() in ['salir', 'q', 'exit']:
             print("¡Hasta luego! Cerrando programa...")
             break
 
@@ -179,8 +181,16 @@ def main():
 
             procesar_descarga(videos[int(seleccion) - 1]["url"])
 
+        elif opcion == '4':
+            confirmar = input(
+                "Se sobrescribirán título y artista de los .opus según el nombre "
+                "del archivo. ¿Continuar? (s/n): "
+            ).strip().lower()
+            if confirmar == "s":
+                editar_metadatos(CARPETA_DESCARGAS)
+
         else:
-            print("Opción no válida. Por favor, elige 1, 2, 3 o 4.")
+            print("Opción no válida. Por favor, elige 1, 2, 3, 4 o 5.")
 
 if __name__ == "__main__":
     try:
