@@ -1,6 +1,16 @@
 import re
 from mutagen.oggopus import OggOpus
 
+PALABRAS_BASURA = [
+    "official", "oficial", "video", "videoclip", "audio",
+    "lyric", "lyrics", "letra", "hd", "hq", "4k","version","original"
+]
+
+def limpiar_titulo(titulo):
+    palabras = "|".join(PALABRAS_BASURA)
+    patron = rf"\s*[\(\[][^)\]]*\b(?:{palabras})\b[^)\]]*[\)\]]"
+    return re.sub(patron, "", titulo, flags=re.IGNORECASE).strip()
+
 def separar_artistas(texto):
     """Divide 'A ft B', 'A feat. B' o 'A x B' en una lista de artistas."""
     artistas = re.split(
@@ -10,19 +20,11 @@ def separar_artistas(texto):
     )
     return [a.strip() for a in artistas if a.strip()]
 
-def limpiar_titulo(titulo):
-    return re.sub(
-        r"\s*[\(\[][^)\]]*(official|video|audio|lyrics|letra|hd|hq)[^)\]]*[\)\]]",
-        "",
-        titulo,
-        flags=re.IGNORECASE,
-    ).strip()
-
 def automatico(audio, archivo):
     nombre_limpio = limpiar_titulo(archivo.stem)
     if " - " not in nombre_limpio:
         return None
-    artista, titulo = archivo.stem.split(" - ", 1)
+    artista, titulo = nombre_limpio.split(" - ", 1)
     audio["artist"] = separar_artistas(artista)
     audio["title"] = [titulo.strip()]
     return nombre_limpio

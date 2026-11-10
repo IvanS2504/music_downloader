@@ -55,6 +55,12 @@ def procesar_descarga(url):
         print("[❌ Error]: Revisa el log.")
         return False
 
+def formatear_duracion(segundos):
+    if not segundos:
+        return "??:??"
+    horas, resto = divmod(int(segundos), 3600)
+    minutos, seg = divmod(resto, 60)
+    return f"{horas}:{minutos:02d}:{seg:02d}" if horas else f"{minutos}:{seg:02d}"
 
 def buscar_videos_youtube(consulta, max_resultados=10):
     try:
@@ -86,6 +92,7 @@ def buscar_videos_youtube(consulta, max_resultados=10):
             videos.append({
                 "title": resultado.get("title") or "Sin título",
                 "channel": resultado.get("channel") or resultado.get("uploader") or "Canal desconocido",
+                "duration": resultado.get("duration") or 0,
                 "url": url,
             })
 
@@ -168,7 +175,7 @@ def main():
 
             print("\nResultados de YouTube:")
             for indice, video in enumerate(videos, 1):
-                print(f"  {indice}. {video['title']} — {video['channel']}")
+                print(f"  {indice}. {video['title']} — {video['channel']} ({formatear_duracion(video['duration'])})")
 
             seleccion = input(
                 "\nElige el número del resultado para descargar (0 para cancelar): "
