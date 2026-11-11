@@ -8,6 +8,7 @@ CARPETA_DESCARGAS = BASE / "downloads"
 ARCHIVO_LINKS = BASE / "links.txt"
 ARCHIVO_LOG = BASE / "historial_descargas.log"
 ARCHIVO_HISTORIAL = BASE / "archivo_descargas.txt"
+DESCARGAS_FALLIDAS = BASE / "descargas_fallidas.txt"
 
 # Configuracion logs
 logging.basicConfig(
@@ -15,6 +16,38 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
+
+def mostrar_progreso(d):
+    """Hook de yt-dlp: dibuja una barra mientras se descarga."""
+    if d["status"] == "downloading":
+        total = d.get("total_bytes") or d.get("total_bytes_estimate")
+        if total:
+            fraccion = d.get("downloaded_bytes", 0) / total
+            llenos = int(fraccion * 30)
+            barra = "█" * llenos + "░" * (30 - llenos)
+            print(f"\r   [{barra}] {fraccion:6.1%}", end="", flush=True)
+    elif d["status"] == "finished":
+        print(f"\r   [{'█' * 30}] 100.0%  Descarga completa")
+
+PASOS = {
+    "ThumbnailsConvertor": "Recortando carátula a cuadrado",
+    "ExtractAudio": "Extrayendo audio",
+    "Metadata": "Escribiendo metadatos",
+    "EmbedThumbnail": "Incrustando carátula",
+    "MoveFiles": "Guardando archivo",
+}
+
+pasos_mostrados = set()
+
+def mostrar_paso(d):
+    """Hook de postprocesadores: avisa cada paso una sola vez por descarga."""
+    if d["status"] != "started":
+        return
+    paso = d["postprocessor"]
+    if paso in pasos_mostrados:
+        return
+    pasos_mostrados.add(paso)
+    print(f"   {PASOS.get(paso, paso)}...")
 
 #Configuracion de yt-dlp
 OPCIONES = {
@@ -29,13 +62,43 @@ OPCIONES = {
     "postprocessors": [
     {"key": "FFmpegExtractAudio", "preferredcodec": "best"},
     {"key": "FFmpegMetadata"},
+    {"key": "FFmpegThumbnailsConvertor", "format": "jpg", "when": "before_dl"},
     {"key": "EmbedThumbnail"},
     ],
+    "postprocessor_args": {
+        "thumbnailsconvertor+ffmpeg_o": [
+            "-c:v", "mjpeg",
+            "-vf", "crop='if(gt(ih,iw),iw,ih)':'if(gt(iw,ih),ih,iw)'",
+        ],
+    },
     "download_archive": str(ARCHIVO_HISTORIAL),
+    "quiet": True,
+    "progress_hooks": [mostrar_progreso],
+    "postprocessor_hooks": [mostrar_paso],
 }
+
+def leer_fallidas():
+    if not DESCARGAS_FALLIDAS.exists():
+        return []
+    return DESCARGAS_FALLIDAS.read_text(encoding="utf-8").splitlines()
+
+def registrar_fallida(url):
+    """Agrega la URL a la lista de pendientes si aún no está."""
+    if url not in leer_fallidas():
+        with open(DESCARGAS_FALLIDAS, "a", encoding="utf-8") as f:
+            f.write(url + "\n")
+
+def quitar_fallida(url):
+    """Quita la URL de la lista de pendientes (si estaba)."""
+    lineas = leer_fallidas()
+    if url in lineas:
+        restantes = [l for l in lineas if l != url]
+        texto = "\n".join(restantes) + ("\n" if restantes else "")
+        DESCARGAS_FALLIDAS.write_text(texto, encoding="utf-8")
 
 def procesar_descarga(url):
     """Procesa una URL de forma individual."""
+    pasos_mostrados.clear()
     try:
         print(f"\nBuscando: {url}")
         with yt_dlp.YoutubeDL(OPCIONES) as ydl:
@@ -43,21 +106,25 @@ def procesar_descarga(url):
         if info is None:
             print("Ya estaba descargada")
             logging.info(f"Omitida, ya estaba en historial: {url}")
+            quitar_fallida(url)
             return "omitida"
         
         titulo = info.get('title') or "Sin título"
         print(f"-> Descargado: {titulo}")
         logging.info(f"Descarga exitosa: {titulo} ({url})")
+        quitar_fallida(url)
         return "ok"
 
     except yt_dlp.utils.DownloadError as e:
         logging.error(f"No se pudo descargar URL {url}: {e}")
         print(f"[❌ Error de descarga]: {url}")
+        registrar_fallida(url)
         return "fallida"
 
     except Exception as e:
         logging.error(f"Error inesperado con '{url}': {e}")
         print("[❌ Error]: Revisa el log.")
+        registrar_fallida(url)
         return "fallida"
 
 def formatear_duracion(segundos):
@@ -117,26 +184,26 @@ def buscar_videos_youtube(consulta, max_resultados=10):
         print("[❌ Error]: Ocurrió un problema con la búsqueda. Revisa el log.")
     return []
 
-def op_url_download():
+def op_url_individual():
     url = input("Ingrese url: ").strip()
     if url:
         procesar_descarga(url)
-
-def op_lote_links():
+    
+def op_lote_links(archivo):
     """Procesa varios links desde un archivo txt"""
-    if not ARCHIVO_LINKS.exists():
-        print(f"\n[⚠️ Atención]: No se encontró el archivo '{ARCHIVO_LINKS}' en la carpeta del proyecto.")
+    if not archivo.exists():
+        print(f"\n[⚠️ Atención]: No se encontró el archivo '{archivo.name}' en la carpeta del proyecto.")
         print("Crea un archivo llamado 'links.txt' y pega un enlace por línea.")
         return
     
-    print(f"\nLeyendo enlaces desde '{ARCHIVO_LINKS}'...")
+    print(f"\nLeyendo enlaces desde '{archivo.name}'...")
     
     with open(ARCHIVO_LINKS, 'r', encoding='utf-8') as f:
         urls = [line.strip() for line in f if line.strip() and not line.startswith("#")]
     
     total = len(urls)
     if total == 0:
-        print("El archivo 'links.txt' está vacío.")
+        print(f"El archivo '{archivo.name}' está vacío.")
         return
     
     print(f"Se encontraron {total} enlaces para procesar.\n")
@@ -198,26 +265,30 @@ def main():
         print("\nOpciones:")
         print("  1. Descargar una URL individual")
         print("  2. Descargar desde archivo 'links.txt'")
-        print("  3. Buscar en YouTube y descargar")
-        print("  4. Corregir metadatos(titulo, artista) y nombre del archivo")
-        print("  5. Salir")
+        print("  3. Reintentar descargas fallidas")
+        print("  4. Buscar en YouTube y descargar")
+        print("  5. Corregir metadatos(titulo, artista) y nombre del archivo")
+        print("  6. Salir")
         
-        opcion = input("\nElige una opción (1, 2, 3, 4 o 5): ").strip()
+        opcion = input("\nElige una opción (1, 2, 3, 4, 5 o 6): ").strip()
         
-        if opcion == '5' or opcion.lower() in ['salir', 'q', 'exit']:
+        if opcion == '6' or opcion.lower() in ['salir', 'q', 'exit']:
             print("¡Hasta luego! Cerrando programa...")
             break
 
         elif opcion == '1':
-            op_url_download()
+            op_url_individual()
 
         elif opcion == '2':
-            op_lote_links()
+            op_lote_links(ARCHIVO_LINKS)
 
         elif opcion == '3':
-            op_search_download()
+            op_lote_links(DESCARGAS_FALLIDAS)    
 
         elif opcion == '4':
+            op_search_download()
+
+        elif opcion == '5':
             op_metadata_correction()
         else:
             print("Opción no válida. Por favor, elige 1, 2, 3, 4 o 5.")

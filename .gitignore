@@ -4,3 +4,4 @@ __pycache__/
 *.log
 archivo_descargas.txt
 links.txt
+descargas_fallidas.txt
