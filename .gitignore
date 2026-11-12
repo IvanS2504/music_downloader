@@ -5,3 +5,4 @@ __pycache__/
 archivo_descargas.txt
 links.txt
 descargas_fallidas.txt
+.pytest_cache/
