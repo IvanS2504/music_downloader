@@ -12,15 +12,28 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 
 from pathlib import Path
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
+import os
+from django.core.management.utils import get_random_secret_key
+
 BASE_DIR = Path(__file__).resolve().parent.parent
+ARCHIVO_CLAVE = BASE_DIR / ".secret_key"
+
+
+def _cargar_o_crear_clave():
+    if ARCHIVO_CLAVE.exists():
+        return ARCHIVO_CLAVE.read_text(encoding="utf-8").strip()
+    clave = get_random_secret_key()
+    ARCHIVO_CLAVE.write_text(clave, encoding="utf-8")
+    return clave
+
+
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-_c2m$oervnwbv-^15(bysa7puz-+ylm%6by#(-0e_rra3i4x)e'
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY") or _cargar_o_crear_clave()
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
