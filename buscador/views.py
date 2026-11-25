@@ -1,14 +1,12 @@
 import re
-
+import trabajos
 from django.http import JsonResponse
 from django.views.decorators.http import require_GET, require_POST
-
-import trabajos
-
 from django.shortcuts import render
-
 from descargas import buscar_videos_youtube, formatear_duracion
 from historial import cargar_historial
+from config import CARPETA_DESCARGAS
+from metadatos import editar_metadatos
 
 
 def buscar(request):
@@ -24,6 +22,15 @@ def buscar(request):
             })
     return render(request, "buscador/buscar.html",
                   {"consulta": consulta, "resultados": resultados})
+
+def metadatos(request):
+    contexto = {}
+    if request.method == "POST":
+        if trabajos.hay_activos():
+            contexto["aviso"] = "Hay descargas en curso: espera a que terminen."
+        else:
+            contexto["resumen"] = editar_metadatos(CARPETA_DESCARGAS)
+    return render(request, "buscador/metadatos.html", contexto)
 
 @require_POST
 def descargar(request):

@@ -20,8 +20,12 @@ def separar_artistas(texto):
     )
     return [a.strip() for a in artistas if a.strip()]
 
+def normalizar_guiones(texto):
+    """Convierte guiones largos (– —) entre espacios en un guion normal."""
+    return re.sub(r"\s+[\u2012-\u2015\u2212]\s+", " - ", texto)
+
 def automatico(audio, archivo):
-    nombre_limpio = limpiar_titulo(archivo.stem)
+    nombre_limpio = normalizar_guiones(limpiar_titulo(archivo.stem))
     if " - " not in nombre_limpio:
         return None
     artista, titulo = nombre_limpio.split(" - ", 1)
@@ -29,34 +33,27 @@ def automatico(audio, archivo):
     audio["title"] = [titulo.strip()]
     return nombre_limpio
 
-def editar_metadatos(CARPETA_DESCARGAS):
-    archivos = sorted(CARPETA_DESCARGAS.glob("*.opus"))
-    if not archivos:
-        print("No hay archivos .opus en la carpeta.")
-        return
+def editar_metadatos(carpeta):
+    """Corrige etiquetas y nombres de los .opus. Devuelve un resumen."""
+    resumen = {"corregidos": 0, "renombrados": 0, "omitidos": [], "conflictos": []}
 
-    corregidos = 0
-    omitidos = []
-    for archivo in archivos:
+    for archivo in sorted(carpeta.glob("*.opus")):
         audio = OggOpus(str(archivo))
         nombre_limpio = automatico(audio, archivo)
         if nombre_limpio is None:
-            omitidos.append(archivo.name)
+            resumen["omitidos"].append(archivo.name)
             continue
 
         audio.save()
-        corregidos += 1
+        resumen["corregidos"] += 1
 
         nuevo = archivo.with_stem(nombre_limpio)
         if nuevo == archivo:
             continue
         if nuevo.exists():
-            print(f"Ya existe un archivo con el nombre {nuevo.name}. Se omitirá la renombración.")
+            resumen["conflictos"].append(f"{archivo.name} → ya existe {nuevo.name}")
         else:
             archivo.rename(nuevo)
+            resumen["renombrados"] += 1
 
-    print(f"\n✅ Corregidos: {corregidos}")
-    if omitidos:
-        print("⚠️ Sin formato 'Artista - Título' (no se tocaron):")
-        for nombre in omitidos:
-            print(f"   - {nombre}")
+    return resumen

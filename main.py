@@ -77,7 +77,18 @@ def op_metadata_correction():
         "del archivo. ¿Continuar? (s/n): "
     ).strip().lower()
     if confirmar == "s":
-        editar_metadatos(CARPETA_DESCARGAS)
+        if confirmar == "s":
+            imprimir_resumen(editar_metadatos(CARPETA_DESCARGAS))
+
+def imprimir_resumen(resumen):
+    print(f"\n✅ Corregidos: {resumen['corregidos']}")
+    print(f"✏️ Renombrados: {resumen['renombrados']}")
+    if resumen["omitidos"]:
+        print("⚠️ Sin formato 'Artista - Título' (no se tocaron):")
+        for nombre in resumen["omitidos"]:
+            print(f"   - {nombre}")
+    for conflicto in resumen["conflictos"]:
+        print(f"⚠️ Conflicto: {conflicto}")
 
 def main():
     logging.basicConfig(

@@ -70,3 +70,8 @@ def _ejecutar(id_trabajo):
     resultado = procesar_descarga(url, al_progresar, al_paso)
     _actualizar(id_trabajo, estado=resultado,
                 progreso=1.0 if resultado != "fallida" else 0.0)
+
+def hay_activos():
+    """True si hay descargas esperando o en curso."""
+    with _candado:
+        return any(t["estado"] in ("en_cola", "descargando") for t in _trabajos.values())
