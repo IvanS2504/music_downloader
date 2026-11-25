@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Descargador de música</title>
+</head>
+<body>
+  <h1>🎵 Descargador de música</h1>
+
+  <form method="get">
+    <input type="search" name="q" value="{{ consulta }}"
+           placeholder="Canción o artista" autofocus>
+    <button>Buscar</button>
+  </form>
+
+  {% if consulta and not resultados %}
+    <p>No se encontraron resultados.</p>
+  {% endif %}
+
+  <ul>
+    {% for v in resultados %}
+      <li>
+        {{ v.title }} — {{ v.channel }} ({{ v.duracion }})
+        {% if v.descargada %}✅ ya descargada{% endif %}
+      </li>
+    {% endfor %}
+  </ul>
+</body>
+</html>
