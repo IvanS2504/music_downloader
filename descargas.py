@@ -7,9 +7,8 @@ from historial import registrar_fallida, quitar_fallida
 def mostrar_progreso(d):
     """Hook de yt-dlp: dibuja una barra mientras se descarga."""
     if d["status"] == "downloading":
-        total = d.get("total_bytes") or d.get("total_bytes_estimate")
-        if total:
-            fraccion = d.get("downloaded_bytes", 0) / total
+        fraccion = fraccion_de(d)
+        if fraccion is not None:
             llenos = int(fraccion * 30)
             barra = "█" * llenos + "░" * (30 - llenos)
             print(f"\r   [{barra}] {fraccion:6.1%}", end="", flush=True)
@@ -63,12 +62,14 @@ OPCIONES = {
     "postprocessor_hooks": [mostrar_paso],
 }
 
-def procesar_descarga(url):
-    """Procesa una URL de forma individual."""
+def procesar_descarga(url, on_progress=None, on_paso=None):
     pasos_mostrados.clear()
+    opciones = dict(OPCIONES)
+    opciones["progress_hooks"] = [on_progress or mostrar_progreso]
+    opciones["postprocessor_hooks"] = [on_paso or mostrar_paso]
     try:
         print(f"\nBuscando: {url}")
-        with yt_dlp.YoutubeDL(OPCIONES) as ydl:
+        with yt_dlp.YoutubeDL(opciones) as ydl:
             info = ydl.extract_info(url, download=True)
         if info is None:
             print("Ya estaba descargada")
@@ -143,3 +144,10 @@ def buscar_videos_youtube(consulta, max_resultados=10):
         logging.error(f"Error inesperado al buscar '{consulta}': {error}")
         print("[❌ Error]: Ocurrió un problema con la búsqueda. Revisa el log.")
     return []
+
+def fraccion_de(d):
+    """Fracción (0 a 1) descargada según el diccionario del hook, o None."""
+    total = d.get("total_bytes") or d.get("total_bytes_estimate")
+    if not total:
+        return None
+    return d.get("downloaded_bytes", 0) / total
