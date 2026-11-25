@@ -21,9 +21,90 @@
     {% for v in resultados %}
       <li>
         {{ v.title }} — {{ v.channel }} ({{ v.duracion }})
-        {% if v.descargada %}✅ ya descargada{% endif %}
+        {% if v.descargada %}
+          ✅ ya descargada
+        {% else %}
+          <button type="button" class="descargar"
+                  data-id="{{ v.id }}" data-titulo="{{ v.title }}">Descargar</button>
+          <progress max="1" value="0" hidden></progress>
+          <span class="estado"></span>
+        {% endif %}
       </li>
     {% endfor %}
   </ul>
+
+  {% csrf_token %}
+  <script>
+    const ETIQUETAS = {
+      ok: "✅ Descargada",
+      omitida: "⏭️ Ya estaba descargada",
+      fallida: "❌ Falló (revisa el registro)",
+    };
+
+    function obtenerToken() {
+      const campo = document.querySelector("[name=csrfmiddlewaretoken]");
+      return campo ? campo.value : null;
+    }
+
+    const botones = document.querySelectorAll(".descargar");
+
+    botones.forEach(boton => {
+      boton.addEventListener("click", async () => {
+        const fila = boton.closest("li");
+        const barra = fila.querySelector("progress");
+        const texto = fila.querySelector(".estado");
+        boton.disabled = true;
+        texto.textContent = "Enviando...";
+
+        try {
+          const token = obtenerToken();
+          if (!token) throw new Error("falta el token CSRF en la página");
+
+          const respuesta = await fetch("{% url 'descargar' %}", {
+            method: "POST",
+            headers: { "X-CSRFToken": token },
+            body: new URLSearchParams({
+              id: boton.dataset.id,
+              titulo: boton.dataset.titulo,
+            }),
+          });
+          if (!respuesta.ok) {
+            throw new Error("el servidor respondió " + respuesta.status);
+          }
+
+          const datos = await respuesta.json();
+          barra.hidden = false;
+          seguir(datos.trabajo, barra, texto);
+        } catch (error) {
+          console.error(error);
+          texto.textContent = "Error: " + error.message;
+          boton.disabled = false;
+        }
+      });
+    });
+
+    function seguir(trabajo, barra, texto) {
+      const timer = setInterval(async () => {
+        try {
+          const respuesta = await fetch("/estado/" + trabajo + "/");
+          if (!respuesta.ok) throw new Error("estado " + respuesta.status);
+          const t = await respuesta.json();
+          barra.value = t.progreso;
+
+          if (t.estado === "en_cola") {
+            texto.textContent = "En cola...";
+          } else if (t.estado === "descargando") {
+            texto.textContent = t.paso || Math.round(t.progreso * 100) + "%";
+          } else {
+            clearInterval(timer);
+            texto.textContent = ETIQUETAS[t.estado] || t.estado;
+          }
+        } catch (error) {
+          clearInterval(timer);
+          texto.textContent = "Se perdió el seguimiento";
+        }
+      }, 1000);
+    }
+  </script>
 </body>
 </html>
