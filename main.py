@@ -77,7 +77,10 @@ def op_metadata_correction():
         "del archivo. ¿Continuar? (s/n): "
     ).strip().lower()
     if confirmar == "s":
-        editar_metadatos(CARPETA_DESCARGAS)
+        usar_mb = input(
+        "¿Consultar MusicBrainz para completar álbum, año y nombres oficiales? (s/n): "
+        ).strip().lower() == "s"
+        editar_metadatos(CARPETA_DESCARGAS, usar_musicbrainz=usar_mb)
 
 def main():
     logging.basicConfig(
