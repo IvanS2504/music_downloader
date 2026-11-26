@@ -8,4 +8,3 @@ descargas_fallidas.txt
 .pytest_cache/
 db.sqlite3
 .secret_key
-mailmap.txt
