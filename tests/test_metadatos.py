@@ -1,6 +1,15 @@
 from pathlib import Path
+
 import pytest
-from metadatos import limpiar_titulo, separar_artistas, automatico, editar_metadatos, normalizar_guiones
+
+from metadatos import (
+    automatico,
+    editar_metadatos,
+    limpiar_titulo,
+    normalizar_guiones,
+    separar_artistas,
+)
+
 
 @pytest.mark.parametrize("entrada, esperado", [
     ("Artist - Song (Official Video)", "Artist - Song"),

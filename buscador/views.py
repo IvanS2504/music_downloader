@@ -1,11 +1,13 @@
 import re
-import trabajos
+
 from django.http import JsonResponse
-from django.views.decorators.http import require_GET, require_POST
 from django.shortcuts import render
+from django.views.decorators.http import require_GET, require_POST
+
+import trabajos
+from config import CARPETA_DESCARGAS
 from descargas import buscar_videos_youtube, formatear_duracion
 from historial import cargar_historial
-from config import CARPETA_DESCARGAS
 from metadatos import editar_metadatos
 
 

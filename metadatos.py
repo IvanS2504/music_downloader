@@ -1,4 +1,5 @@
 import re
+
 from mutagen.oggopus import OggOpus
 
 PALABRAS_BASURA = [

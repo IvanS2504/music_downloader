@@ -1,8 +1,11 @@
 import logging
+
 import yt_dlp
 
-from config import CARPETA_DESCARGAS, ARCHIVO_HISTORIAL
-from historial import registrar_fallida, quitar_fallida
+from config import ARCHIVO_HISTORIAL, CARPETA_DESCARGAS
+from historial import quitar_fallida, registrar_fallida
+
+logger = logging.getLogger(__name__)
 
 def mostrar_progreso(d):
     """Hook de yt-dlp: dibuja una barra mientras se descarga."""
@@ -73,24 +76,24 @@ def procesar_descarga(url, on_progress=None, on_paso=None):
             info = ydl.extract_info(url, download=True)
         if info is None:
             print("Ya estaba descargada")
-            logging.info(f"Omitida, ya estaba en historial: {url}")
+            logger.info(f"Omitida, ya estaba en historial: {url}")
             quitar_fallida(url)
             return "omitida"
         
         titulo = info.get('title') or "Sin título"
         print(f"-> Descargado: {titulo}")
-        logging.info(f"Descarga exitosa: {titulo} ({url})")
+        logger.info(f"Descarga exitosa: {titulo} ({url})")
         quitar_fallida(url)
         return "ok"
 
     except yt_dlp.utils.DownloadError as e:
-        logging.error(f"No se pudo descargar URL {url}: {e}")
+        logger.error(f"No se pudo descargar URL {url}: {e}")
         print(f"[❌ Error de descarga]: {url}")
         registrar_fallida(url)
         return "fallida"
 
-    except Exception as e:
-        logging.error(f"Error inesperado con '{url}': {e}")
+    except Exception:
+        logger.exception("Error inesperado con '%s'", url)
         print("[❌ Error]: Revisa el log.")
         registrar_fallida(url)
         return "fallida"
@@ -138,10 +141,10 @@ def buscar_videos_youtube(consulta, max_resultados=10):
 
         return videos
     except yt_dlp.utils.DownloadError as error:
-        logging.error(f"No se pudo buscar en YouTube '{consulta}': {error}")
+        logger.error(f"No se pudo buscar en YouTube '{consulta}': {error}")
         print("[❌ Error de búsqueda]: No se pudieron obtener resultados de YouTube.")
-    except Exception as error:
-        logging.error(f"Error inesperado al buscar '{consulta}': {error}")
+    except Exception:
+        logger.exception("Error inesperado con '%s'", url)
         print("[❌ Error]: Ocurrió un problema con la búsqueda. Revisa el log.")
     return []
 

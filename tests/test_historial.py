@@ -1,4 +1,5 @@
-from historial import registrar_fallida, quitar_fallida, leer_fallidas, cargar_historial
+from historial import cargar_historial, leer_fallidas, quitar_fallida, registrar_fallida
+
 
 def test_registrar_no_duplica(tmp_path):
     archivo = tmp_path / "fallidas.txt"

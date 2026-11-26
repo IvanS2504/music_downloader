@@ -1,3 +1,4 @@
+import logging
 import queue
 import threading
 import uuid
@@ -9,6 +10,7 @@ _cola = queue.Queue()
 _candado = threading.Lock()     # protege _trabajos entre hilos
 _hilo = None
 
+logger = logging.getLogger(__name__)
 
 def encolar(url, titulo):
     """Agrega una descarga a la cola y devuelve su identificador."""
@@ -49,6 +51,7 @@ def _trabajador():
         try:
             _ejecutar(id_trabajo)
         except Exception:
+            logger.exception("El trabajo %s falló de forma inesperada", id_trabajo)
             _actualizar(id_trabajo, estado="fallida")
         finally:
             _cola.task_done()

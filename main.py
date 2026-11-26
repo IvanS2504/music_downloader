@@ -5,6 +5,8 @@ from descargas import buscar_videos_youtube, formatear_duracion, procesar_descar
 from historial import cargar_historial
 from metadatos import editar_metadatos
 
+logger = logging.getLogger(__name__)
+
 def op_url_individual():
     url = input("Ingrese url: ").strip()
     if url:
@@ -40,7 +42,7 @@ def op_lote_links(archivo):
     print(f"✅ Exitosas: {resultados['ok']}")
     print(f"⏭️ Ya estaban: {resultados['omitida']}")
     print(f"❌ Fallidas: {resultados['fallida']}")
-    logging.info(f"Lote finalizado. {resultados}")
+    logger.info(f"Lote finalizado. {resultados}")
 
 def op_search_download():
     consulta = input("¿Qué canción o artista quieres buscar?: ").strip()
@@ -77,8 +79,7 @@ def op_metadata_correction():
         "del archivo. ¿Continuar? (s/n): "
     ).strip().lower()
     if confirmar == "s":
-        if confirmar == "s":
-            imprimir_resumen(editar_metadatos(CARPETA_DESCARGAS))
+        imprimir_resumen(editar_metadatos(CARPETA_DESCARGAS))
 
 def imprimir_resumen(resumen):
     print(f"\n✅ Corregidos: {resumen['corregidos']}")
@@ -94,7 +95,7 @@ def main():
     logging.basicConfig(
         filename=ARCHIVO_LOG,
         level=logging.INFO,
-        format='%(asctime)s - %(levelname)s - %(message)s'
+        format="%(asctime)s - %(levelname)s - %(name)s - %(message)s"
     )
     print("=== 🎵 Iniciando Descargador de Música ===")
 

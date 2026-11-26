@@ -10,9 +10,9 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
+import os
 from pathlib import Path
 
-import os
 from django.core.management.utils import get_random_secret_key
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -141,6 +141,7 @@ MAILERS = {
 }
 
 import logging
+
 from config import ARCHIVO_LOG
 
 logging.basicConfig(

@@ -1,9 +1,11 @@
 from config import ARCHIVO_HISTORIAL, DESCARGAS_FALLIDAS
 
+
 def leer_fallidas(archivo=DESCARGAS_FALLIDAS):
     if not archivo.exists():
         return []
     return archivo.read_text(encoding="utf-8").splitlines()
+
 
 def registrar_fallida(url, archivo=DESCARGAS_FALLIDAS):
     """Agrega la URL a la lista de pendientes si aún no está."""
