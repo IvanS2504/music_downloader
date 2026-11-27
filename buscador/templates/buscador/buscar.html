@@ -1,114 +1,111 @@
-<!doctype html>
-<html lang="es">
-<head>
-  <meta charset="utf-8">
-  <title>Descargador de música</title>
-</head>
-<body>
-  <nav>
-    <a href="{% url 'buscar' %}">Buscar</a> |
-    <a href="{% url 'metadatos' %}">Corregir metadatos</a>
-  </nav>
-  <h1>🎵 Descargador de música</h1>
+{% extends "buscador/base.html" %}
 
-  <form method="get">
+{% block titulo %}Buscar · Music Downloader{% endblock %}
+
+{% block contenido %}
+  <form method="get" class="busqueda">
     <input type="search" name="q" value="{{ consulta }}"
            placeholder="Canción o artista" autofocus>
     <button>Buscar</button>
   </form>
 
   {% if consulta and not resultados %}
-    <p>No se encontraron resultados.</p>
+    <p class="aviso">No se encontraron resultados.</p>
   {% endif %}
 
-  <ul>
+  <ul class="resultados">
     {% for v in resultados %}
-      <li>
-        {{ v.title }} — {{ v.channel }} ({{ v.duracion }})
-        {% if v.descargada %}
-          ✅ ya descargada
-        {% else %}
-          <button type="button" class="descargar"
-                  data-id="{{ v.id }}" data-titulo="{{ v.title }}">Descargar</button>
-          <progress max="1" value="0" hidden></progress>
-          <span class="estado"></span>
-        {% endif %}
+      <li class="resultado">
+        <div class="info">
+          <strong>{{ v.title }}</strong>
+          <span class="meta">{{ v.channel }} · {{ v.duracion }}</span>
+        </div>
+        <div class="acciones">
+          {% if v.descargada %}
+            <span class="etiqueta">✅ Ya descargada</span>
+          {% else %}
+            <button type="button" class="descargar"
+                    data-id="{{ v.id }}" data-titulo="{{ v.title }}">Descargar</button>
+            <progress max="1" value="0" hidden></progress>
+            <span class="estado"></span>
+          {% endif %}
+        </div>
       </li>
     {% endfor %}
   </ul>
 
   {% csrf_token %}
-  <script>
-    const ETIQUETAS = {
-      ok: "✅ Descargada",
-      omitida: "⏭️ Ya estaba descargada",
-      fallida: "❌ Falló (revisa el registro)",
-    };
+{% endblock %}
 
-    function obtenerToken() {
-      const campo = document.querySelector("[name=csrfmiddlewaretoken]");
-      return campo ? campo.value : null;
-    }
+{% block scripts %}
+<script>
+  const ETIQUETAS = {
+    ok: "✅ Descargada",
+    omitida: "⏭️ Ya estaba descargada",
+    fallida: "❌ Falló (revisa el registro)",
+  };
 
-    const botones = document.querySelectorAll(".descargar");
+  function obtenerToken() {
+    const campo = document.querySelector("[name=csrfmiddlewaretoken]");
+    return campo ? campo.value : null;
+  }
 
-    botones.forEach(boton => {
-      boton.addEventListener("click", async () => {
-        const fila = boton.closest("li");
-        const barra = fila.querySelector("progress");
-        const texto = fila.querySelector(".estado");
-        boton.disabled = true;
-        texto.textContent = "Enviando...";
+  document.querySelectorAll(".descargar").forEach(boton => {
+    boton.addEventListener("click", async () => {
+      const fila = boton.closest("li");
+      const barra = fila.querySelector("progress");
+      const texto = fila.querySelector(".estado");
+      boton.disabled = true;
+      texto.textContent = "Enviando...";
 
-        try {
-          const token = obtenerToken();
-          if (!token) throw new Error("falta el token CSRF en la página");
+      try {
+        const token = obtenerToken();
+        if (!token) throw new Error("falta el token CSRF en la página");
 
-          const respuesta = await fetch("{% url 'descargar' %}", {
-            method: "POST",
-            headers: { "X-CSRFToken": token },
-            body: new URLSearchParams({
-              id: boton.dataset.id,
-              titulo: boton.dataset.titulo,
-            }),
-          });
-          if (!respuesta.ok) {
-            throw new Error("el servidor respondió " + respuesta.status);
-          }
-
-          const datos = await respuesta.json();
-          barra.hidden = false;
-          seguir(datos.trabajo, barra, texto);
-        } catch (error) {
-          console.error(error);
-          texto.textContent = "Error: " + error.message;
-          boton.disabled = false;
+        const respuesta = await fetch("{% url 'descargar' %}", {
+          method: "POST",
+          headers: { "X-CSRFToken": token },
+          body: new URLSearchParams({
+            id: boton.dataset.id,
+            titulo: boton.dataset.titulo,
+          }),
+        });
+        if (!respuesta.ok) {
+          throw new Error("el servidor respondió " + respuesta.status);
         }
-      });
+
+        const datos = await respuesta.json();
+        barra.hidden = false;
+        seguir(datos.trabajo, barra, texto);
+      } catch (error) {
+        console.error(error);
+        texto.textContent = "Error: " + error.message;
+        boton.disabled = false;
+      }
     });
+  });
 
-    function seguir(trabajo, barra, texto) {
-      const timer = setInterval(async () => {
-        try {
-          const respuesta = await fetch("/estado/" + trabajo + "/");
-          if (!respuesta.ok) throw new Error("estado " + respuesta.status);
-          const t = await respuesta.json();
-          barra.value = t.progreso;
+  function seguir(trabajo, barra, texto) {
+    const timer = setInterval(async () => {
+      try {
+        const respuesta = await fetch("/estado/" + trabajo + "/");
+        if (!respuesta.ok) throw new Error("estado " + respuesta.status);
+        const t = await respuesta.json();
+        barra.value = t.progreso;
 
-          if (t.estado === "en_cola") {
-            texto.textContent = "En cola...";
-          } else if (t.estado === "descargando") {
-            texto.textContent = t.paso || Math.round(t.progreso * 100) + "%";
-          } else {
-            clearInterval(timer);
-            texto.textContent = ETIQUETAS[t.estado] || t.estado;
-          }
-        } catch (error) {
+        if (t.estado === "en_cola") {
+          texto.textContent = "En cola...";
+        } else if (t.estado === "descargando") {
+          texto.textContent = t.paso || Math.round(t.progreso * 100) + "%";
+        } else {
           clearInterval(timer);
-          texto.textContent = "Se perdió el seguimiento";
+          texto.textContent = ETIQUETAS[t.estado] || t.estado;
         }
-      }, 1000);
-    }
-  </script>
-</body>
-</html>
+      } catch (error) {
+        clearInterval(timer);
+        texto.textContent = "Se perdió el seguimiento";
+      }
+    }, 1000);
+  }
+</script>
+{% endblock %}

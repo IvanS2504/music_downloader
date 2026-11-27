@@ -1,6 +1,6 @@
 # 🎵 Music Downloader
 
-![Tests](https://github.com/IvanS2504/music_downloader/.github/workflows/test.yml/badge.svg)
+![Tests](https://github.com/IvanS2504/music_downloader/actions/workflows/test.yml/badge.svg)
 
 Descargador de música personal basado en [yt-dlp](https://github.com/yt-dlp/yt-dlp),
 con una interfaz web local (Django) y una interfaz de consola.

@@ -1,0 +1,25 @@
+{% load static %}
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block titulo %}Music Downloader{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'buscador/style.css' %}">
+</head>
+<body>
+  <header>
+    <h1>🎵 Music Downloader</h1>
+    <nav>
+      <a href="{% url 'buscar' %}"{% if request.resolver_match.url_name == 'buscar' %} class="activa"{% endif %}>Buscar</a>
+      <a href="{% url 'metadatos' %}"{% if request.resolver_match.url_name == 'metadatos' %} class="activa"{% endif %}>Corregir metadatos</a>
+    </nav>
+  </header>
+
+  <main>
+    {% block contenido %}{% endblock %}
+  </main>
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>

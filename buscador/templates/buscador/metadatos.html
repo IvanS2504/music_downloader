@@ -1,22 +1,15 @@
-<!doctype html>
-<html lang="es">
-<head>
-  <meta charset="utf-8">
-  <title>Corregir metadatos</title>
-</head>
-<body>
-  <nav>
-    <a href="{% url 'buscar' %}">Buscar</a> |
-    <a href="{% url 'metadatos' %}">Corregir metadatos</a>
-  </nav>
+{% extends "buscador/base.html" %}
 
-  <h1>Corregir metadatos</h1>
+{% block titulo %}Corregir metadatos · Music Downloader{% endblock %}
+
+{% block contenido %}
+  <h2>Corregir metadatos</h2>
   <p>Toma artista y título del nombre de cada archivo .opus de la carpeta de
      descargas, quita sufijos como «(Official Video)» y renombra el archivo.</p>
-  <p><strong>Los cambios no se pueden deshacer.</strong> Si tienes dudas,
-     copia antes la carpeta de descargas.</p>
+  <p class="aviso"><strong>Los cambios no se pueden deshacer.</strong> Si tienes
+     dudas, copia antes la carpeta de descargas.</p>
 
-  {% if aviso %}<p>⚠️ {{ aviso }}</p>{% endif %}
+  {% if aviso %}<p class="aviso">⚠️ {{ aviso }}</p>{% endif %}
 
   <form method="post"
         onsubmit="return confirm('Se sobrescribirán título y artista y se renombrarán archivos. ¿Continuar?');">
@@ -25,19 +18,20 @@
   </form>
 
   {% if resumen %}
-    <h2>Resultado</h2>
-    <ul>
-      <li>✅ Corregidos: {{ resumen.corregidos }}</li>
-      <li>✏️ Renombrados: {{ resumen.renombrados }}</li>
-    </ul>
-    {% if resumen.omitidos %}
-      <h3>Sin formato «Artista - Título» (no se tocaron)</h3>
-      <ul>{% for nombre in resumen.omitidos %}<li>{{ nombre }}</li>{% endfor %}</ul>
-    {% endif %}
-    {% if resumen.conflictos %}
-      <h3>Conflictos de nombre</h3>
-      <ul>{% for c in resumen.conflictos %}<li>{{ c }}</li>{% endfor %}</ul>
-    {% endif %}
+    <section class="resumen">
+      <h3>Resultado</h3>
+      <ul>
+        <li>✅ Corregidos: {{ resumen.corregidos }}</li>
+        <li>✏️ Renombrados: {{ resumen.renombrados }}</li>
+      </ul>
+      {% if resumen.omitidos %}
+        <h4>Sin formato «Artista - Título» (no se tocaron)</h4>
+        <ul>{% for nombre in resumen.omitidos %}<li>{{ nombre }}</li>{% endfor %}</ul>
+      {% endif %}
+      {% if resumen.conflictos %}
+        <h4>Conflictos de nombre</h4>
+        <ul>{% for c in resumen.conflictos %}<li>{{ c }}</li>{% endfor %}</ul>
+      {% endif %}
+    </section>
   {% endif %}
-</body>
-</html>
+{% endblock %}
