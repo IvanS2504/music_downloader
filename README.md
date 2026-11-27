@@ -6,6 +6,8 @@ Descargador de música personal basado en [yt-dlp](https://github.com/yt-dlp/yt-
 con una interfaz web local (Django) y una interfaz de consola.
 Proyecto de aprendizaje: lo desarrollé paso a paso, con pruebas automáticas y control de versiones desde el principio.
 
+![Buscador](docs/captura-buscador.png)
+
 ## Funciones
 
 **Búsqueda y descarga**
